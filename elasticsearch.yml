@@ -1,0 +1,42 @@
+---
+- hosts: all
+  vars:
+    es_shards: 4
+    es_replicas: 2
+    es_datapath: /elastic_data
+  roles:
+    - common
+  tasks:
+    - name: Download and install Java
+      command: /bin/bash /vagrant/installjava.sh
+      args:
+        chdir: /opt
+        creates: /opt/jre1.8.0_40/bin/java
+
+    - name: Install Elastic Search GPG key
+      rpm_key: 
+        state=present 
+        key=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+
+    - name: Install Elastic Search repo
+      copy: 
+        src: elasticsearch.repo
+        dest: /etc/yum.repos.d/elasticsearch.repo
+
+    - name: Install Elastic Search
+      yum:  name=elasticsearch state=installed
+
+    - name: Configure Elastic Search
+      template:
+        src: es.conf.j2
+        dest: /etc/elasticsearch/elasticsearch.yml
+
+    - name: Creates directory
+      file: 
+        path={{es_datapath}} state=directory 
+        owner=elasticsearch group=elasticsearch mode=0775
+
+    - name: Enable service
+      service: name=elasticsearch enabled=true state=restarted
+
+

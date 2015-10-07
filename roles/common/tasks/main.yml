@@ -1,0 +1,39 @@
+
+---
+
+  - name: Install epel-release
+    yum:  name=epel-release state=installed
+    
+  - name: Upgrade all packages
+    yum: name=* state=latest
+#    yum: name=* state=latest update_cache=yes
+#                    -- current version of ansible break when update_cache is used
+
+  - name: Install base packages
+    yum: name={{ item }} state=present
+    with_items:
+      - nano
+      - unzip
+      - vim
+      - yum-utils
+      - net-snmp
+      - net-snmp-utils
+      - lsof
+      - mlocate
+      - git
+      - zsh
+      - curl
+      - screen
+      - net-tools
+
+  - name: Snmp configuration
+    template:
+      src=snmpd.conf.j2
+      dest=/etc/snmp/snmpd.conf
+      owner=root
+      group=root
+      mode=0600
+
+  - name: Reload snmp
+    service: name=snmpd state=reloaded
+

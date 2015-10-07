@@ -1,0 +1,48 @@
+---
+- hosts: all
+  roles:
+    - common
+  vars:
+    elasticsearchurl: "http://10.0.10.5:9200/"
+  tasks:
+    - name: Add kibana group
+      group: name=kibana
+
+    - name: Add kibana user
+      user: name=kibana shell=/bin/bash group=kibana append=yes
+    
+    - name: Fetch kibana
+      get_url: url=https://download.elastic.co/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz dest=/opt/kibana-4.1.2-linux-x64.tar.gz
+
+    - name: Extract kibana
+      unarchive: 
+        src: /opt/kibana-4.1.2-linux-x64.tar.gz
+        dest: /opt/
+        owner: kibana
+        group: kibana
+        copy: no
+
+    - name: Sym link
+      file:
+        src: /opt/kibana-4.1.2-linux-x64
+        dest: /opt/kibana
+        state: link
+
+    - name: Set ownership
+      file: path=/opt/kibana owner=kibana group=kibana state=directory recurse=yes
+
+    - name: Configure ES url for kibana
+      template: 
+        src: kibana.yml.j2
+        dest: /opt/kibana/config/kibana.yml
+    
+    - name: Configure service
+      template: 
+        src: kibana-service.j2
+        dest: /etc/systemd/system/kibana4.service
+
+    - name: Start service
+      service: name=kibana4 state=restarted enabled=true
+
+
+

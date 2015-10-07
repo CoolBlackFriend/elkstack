@@ -1,0 +1,40 @@
+---
+- hosts: all
+  roles:
+    - common
+
+  tasks:
+    - name: Download and install Java
+      command: /bin/bash /vagrant/installjava.sh
+      args:
+        chdir: /opt
+        creates: /opt/jre1.8.0_40/bin/java
+
+    - name: Install Elastic Search GPG key
+      rpm_key:
+        state=present
+        key=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+
+    - name: Install Logstash repo
+      copy:
+        src: logstash.repo
+        dest: /etc/yum.repos.d/logstash.repo
+
+    - name: Install Logstash
+      yum:  name=logstash state=installed
+
+    - name: Download GeoCityLite
+      get_url: url=http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz dest=/etc/logstash/GeoLiteCity.dat.gz
+
+    - name: Unzip
+      shell: gunzip -f /etc/logstash/GeoLiteCity.dat.gz
+
+    - name: Config logstash
+      template: 
+        src: logstash.conf.j2
+        dest: /etc/logstash/conf.d/logstash.conf
+
+    - name: Logstash service
+      service: name=logstash state=restarted
+
+

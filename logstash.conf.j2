@@ -1,0 +1,65 @@
+input {
+
+  file {
+    type => "apache_access"
+    path => [ "/tmp/star_wars_access.log" ] # found online
+    start_position => "beginning"
+  }
+
+  file {
+    type => "syslog"
+    path => [ "/var/log/*.log", "/var/log/messages", "/var/log/syslog" ]
+    sincedb_path => "/opt/logstash/sincedb-access"
+  }
+
+  syslog {
+    type => "syslog"
+    port => "5544"
+  }
+
+  twitter {
+    consumer_key => "you need to set this up"
+    consumer_secret => "you need to set this up"
+    keywords => [ "beenverified", "linux", "aws" ]
+    oauth_token => "you need to set this up"
+    oauth_token_secret => "you need to set this up"
+  }
+}
+
+
+filter {
+   if [path] =~ "access" {
+      mutate { replace => { "type" => "apache_access" } }
+      grok {
+         match => { "message" => "%{COMBINEDAPACHELOG}" }
+      }
+   }
+
+   date {
+      match => [ "timestamp" , "dd/MMM/yyyy:HH:mm:ss Z" ]
+   }
+
+   geoip {
+      source => "clientip"
+      target => "geoip"
+      database => "/etc/logstash/GeoLiteCity.dat"
+      add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+      add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+    }
+
+    mutate {
+      convert => [ "[geoip][coordinates]", "float"]
+    }
+}
+
+output {
+ elasticsearch { 
+    embedded => false
+    cluster => "clustername"
+    host => [ "10.0.10.5", "10.0.10.6", "10.0.10.7" ] 
+    port => "9200"
+    protocol => "http"
+ }
+}
+
+

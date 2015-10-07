@@ -1,0 +1,17 @@
+
+#       sec.name        source          community
+com2sec AllUser         default         {{ snmp_community }}
+
+#                       sec.model       sec.name
+group   AllGroup        v2c             AllUser
+
+#                       incl/excl       subtree
+view    AllView         included        .1
+
+#                       context model   level   prefix  read            write   notify
+access  AllGroup        ""      any     noauth  exact   AllView         none    none
+
+
+# test the configuration with:
+# snmpwalk -v 2c -c {{ snmp_community }} -O e 127.0.0.1
+
